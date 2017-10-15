@@ -1,5 +1,5 @@
 Self Driving RC Car
-This project used a raspberry pi, arduino, and laptop computer to enable an \'93off-the-shelf\'94 RC car to drive autonomously.
+This project used a raspberry pi, arduino, and laptop computer to enable an "off-the-shelf" RC car to drive autonomously.
 
 Hardware:
 -Raspberry  Pi Model B
@@ -12,7 +12,7 @@ Contents:
 
 neural_net: contains all programs relating to the neural network.
 	-neural_network.py: small scale implementation of a neural network, used for conceptual purposes
-	-collect_data.py: while the user manually operates the car, this program saves the user\'92s input as well as the video stream
+	-collect_data.py: while the user manually operates the car, this program saves the user's input as well as the video stream
 	-mlp_training.py: loads the data saved by collect_data.py and uses it to train the neural network
 	-mlp_test.py: test the trained neural network and its ability to predict commands based upon the video stream
 	-miscellaneous directories for storing data
@@ -29,9 +29,10 @@ raspberry_pi:
 	-ultrasonic_client.py: client program for the raspberry pi to package up ultrasonic data and send it to the host computer
 	-video_client.py: client program to package the video stream on the raspberry pi and send it to the host computer
 
-driver.py: main file for the project. must first run collect_data.py and mlp_training.py before executing this program. 
-	   raspberry pi must have both client programs running (ultrasonic_client.py & video_client.py). 
-	   arduino must be flashed with rc_control.ino and connected to a serial port.
+driver.py: main file for the project. must first run collect_data.py and mlp_training.py before 
+	   executing this program. raspberry pi must have both client programs running 
+	   (ultrasonic_client.py & video_client.py). arduino must be flashed with rc_control.ino and 
+	   connected to a serial port.
 
 References:
 ("https://zhengludwig.wordpress.com/projects/self-driving-rc-car/")
