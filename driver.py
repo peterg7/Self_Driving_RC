@@ -22,7 +22,7 @@ This program handles two threads:
 '''
 
 import threading
-import SocketServer
+import socketserver
 import serial
 import cv2
 import numpy as np
@@ -31,25 +31,7 @@ import numpy as np
 sensor_data = " "
 
 
-# initialize the TCP server & begin thread for video and distance
-class ThreadServer(object):
-
-    def server_thread(self, port):
-        server = SocketServer.TCPServer((self, port), VideoStream)
-        server.serve_forever()
-
-    def server_thread2(self, port):
-        server = SocketServer.TCPServer((self, port), SensorData)
-        server.serve_forever()
-
-    # ip address of pi
-    distance_thread = threading.Thread(target=server_thread2, args=('172.31.2.94', 8002))
-    distance_thread.start()
-    video_thread = threading.Thread(target=server_thread('172.31.2.94', 8000))
-    video_thread.start()
-
-
-class SensorData(SocketServer.BaseRequestHandler):
+class SensorData(socketserver.BaseRequestHandler):
     data = " "
 
     def handle(self):
@@ -58,16 +40,57 @@ class SensorData(SocketServer.BaseRequestHandler):
             while self.data:
                 self.data = self.request.recv(1024)
                 sensor_data = round(float(self.data), 1)
-                print sensor_data
+                print("sensor_data")
         finally:
-            print "Connection closed on thread 2"
+            print("Connection closed on thread 2")
 
 
-class VideoStream(SocketServer.StreamRequestHandler):
+class NeuralNetwork(object):
+
+    def __init__(self):
+        self.model = cv2.ml.ANN_MLP_create()
+
+    # create new network, load data from mlp.xml training data
+    def create(self):
+        layer_size = np.int32([38400, 32, 4])
+        self.model.setLayerSizes(layer_size)
+        self.model.load('neural_net/mlp_xml/mlp.xml')
+
+    def predict(self, samples):
+        retvals, outputs = self.model.predict(samples)
+        return outputs.argmax(-1)
+
+class CarControl(object):
+
+    # serial port of arduino, baudrate 115200
+    def __init__(self):
+        self.serial_port = serial.Serial('/dev/cu.usbserial-A900cfFq', 115200, timeout=1)
+
+    def stop(self):
+        self.serial_port.write(chr(0))
+
+    def control(self, command):
+        if command == 2:
+            self.serial_port.write(chr(1))
+            print("Forward")
+        elif command == 0:
+            self.serial_port.write(chr(4))
+            print("Left")
+        elif command == 1:
+            self.serial_port.write(chr(3))
+            print("Right")
+        elif command == 3:
+            print("Braking")
+            self.serial_port.write(chr(5))
+        else:
+            self.stop()
+
+
+class VideoStream(socketserver.StreamRequestHandler):
     model = NeuralNetwork()
     model.create()
 
-    rc_car = RCControl()
+    rc_car = CarControl()
 
     def handle(self):
         global sensor_data
@@ -109,49 +132,25 @@ class VideoStream(SocketServer.StreamRequestHandler):
                         break
             cv2.destroyAllWindows()
         finally:
-            print "Thread 1 closed"
+            print("Thread 1 closed")
 
 
-class NeuralNetwork(object):
+# initialize the TCP server & begin thread for video and distance
+class ThreadServer(object):
 
-    def __init__(self):
-        self.model = cv2.ANN_MLP()
+    def server_thread(self, port):
+        server = socketserver.TCPServer((self, port), VideoStream)
+        server.serve_forever()
 
-    # create new network, load data from mlp.xml training data
-    def create(self):
-        layer_size = np.int32([38400, 32, 4])
-        self.model.create(layer_size)
-        self.model.load('neural_net/mlp_xml/mlp.xml')
+    def server_thread2(self, port):
+        server = socketserver.TCPServer((self, port), SensorData)
+        server.serve_forever()
 
-    def predict(self, samples):
-        retvals, outputs = self.model.predict(samples)
-        return outputs.argmax(-1)
-
-
-class RCControl(object):
-
-    # serial port of arduino, baudrate 115200
-    def __init__(self):
-        self.serial_port = serial.Serial('/dev/cu.usbserial-A900cfFq', 115200, timeout=1)
-
-    def stop(self):
-        self.serial_port.write(chr(0))
-
-    def control(self, command):
-        if command == 2:
-            self.serial_port.write(chr(1))
-            print("Forward")
-        elif command == 0:
-            self.serial_port.write(chr(4))
-            print("Left")
-        elif command == 1:
-            self.serial_port.write(chr(3))
-            print("Right")
-        elif command == 3:
-            print("Braking")
-            self.serial_port.write(chr(5))
-        else:
-            self.stop()
+    # ip address of pi
+    distance_thread = threading.Thread(target=server_thread2, args=('172.31.2.94', 8002))
+    distance_thread.start()
+    video_thread = threading.Thread(target=server_thread('172.31.2.94', 8000))
+    video_thread.start()
 
 
 if __name__ == '__main__':

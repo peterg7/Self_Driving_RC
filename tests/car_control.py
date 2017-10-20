@@ -11,7 +11,7 @@ import serial
 import pygame
 
 
-class RCTest(object):
+class CarControl(object):
     def __init__(self):
         pygame.init()
         # Serial of arduino, baudrate = 115200
@@ -59,7 +59,7 @@ class RCTest(object):
 
                     # exit
                     elif key_input[pygame.K_x] or key_input[pygame.K_q]:
-                        print 'Exit'
+                        print("Exit")
                         self.send_inst = False
                         self.ser.write(chr(0))
                         self.ser.close()
